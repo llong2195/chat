@@ -1,4 +1,5 @@
 const socketio = require('socket.io')
+const slug = require('slugify')
 const { addUser, getUser, removeUser } = require('../helper/helper')
 const {Room, Message, User} = require('../models/index')
 module.exports = (server) => {
@@ -12,10 +13,16 @@ module.exports = (server) => {
     console.log(`socket running`);
     io.on('connection', (socket) => {
         console.log('A user connected : ' + socket.id);
+
+        Room.find().then((room) => {
+            socket.emit('output-rooms', room);
+        })
+
+
         socket.on('create-room', (name) => {
             console.log(`room is ${name}`);
             if(name && name.length > 0) {
-                const room = new Room({name});
+                const room = new Room({name : slug(name, '-')});
                 room.save().then((results) =>{
                     io.emit('room-created', results)
                 }).catch((err) => {
@@ -48,10 +55,18 @@ module.exports = (server) => {
                 text: message
             }
             console.log('message: ',msgToStore);
-            io.to(user.room_id).emit('message', msgToStore);
-            callback();
+            const msg = new Message(msgToStore);
+            msg.save().then((result) => {
+                io.to(room_id).emit('message', result)
+                callback();
+            })
         })
 
+        socket.on('get-messages-history', room_id =>{
+            Message.find({room_id: room_id}).then((result) =>{
+                socket.emit('output-messages', result);
+            })
+        })
 
         socket.on('disconnect', () => {
             console.log('A user disconnected : ' + socket.id);

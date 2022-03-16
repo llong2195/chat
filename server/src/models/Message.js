@@ -3,6 +3,18 @@ const messageSchema = mongoose.Schema({
     name: {
         type: String,
         required: true
+    },
+    user_id: {
+        type: String,
+        required: true
+    },
+    text: {
+        type: String,
+        required: true
+    },
+    room_id :{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'room'
     }
 }, {
     timestamps: true,

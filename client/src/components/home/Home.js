@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { UserContext } from '../../UserContext'
 import RoomList from './RoomList';
 import io from 'socket.io-client';
@@ -11,25 +11,31 @@ const Home = () => {
     const [rooms, setRooms] = useState([]);
 
     const ENDPT = 'localhost:5000';
+    // connect to socket
     useEffect(() => {
         socket = io(ENDPT);
         return () => {
-            // socket.emit('disconnect');
+            socket.emit('disconnect');
             socket.off();
         }
     }, [ENDPT])
 
+    // listen outsput rooms
+    useEffect(() => {
+        socket.on('output-rooms', (rooms) =>{
+            setRooms(rooms);
+        })
+    }, [])
+    
 
+    // listen 'room-created'
     useEffect(() => {
         socket.on('room-created', room =>{
             setRooms([...rooms, room]);
         })
     }, [rooms])
 
-    useEffect(() => {
-        console.log(rooms);
-    }, [rooms])
-
+    // send create-room
     const handleSubmit = e => {
         e.preventDefault();
         socket.emit('create-room', room);
@@ -37,23 +43,9 @@ const Home = () => {
         setRoom('');
 
     }
-    const setAsJohn = () => {
-        const john = {
-            name: 'John',
-            email: 'john@email.com',
-            password: '123',
-            id: '123'
-        }
-        setUser(john);
-    }
-    const setAsTom = () => {
-        const tom = {
-            name: 'Tom',
-            email: 'tom@email.com',
-            password: '456',
-            id: '456'
-        }
-        setUser(tom);
+    console.log('user HOME :', user);
+    if (!user) {
+        return <Navigate to='/login' />
     }
     return (
         <div>
@@ -77,10 +69,7 @@ const Home = () => {
                                 <button className="btn">Create Room</button>
                             </form>
                         </div>
-                        <div className="card-action">
-                            <a href="#" onClick={setAsJohn}>set as John</a>
-                            <a href="#" onClick={setAsTom}>set as Tom</a>
-                        </div>
+                       
                     </div>
                 </div>
                 <div className="col s6 m5 offset-1">
@@ -88,9 +77,6 @@ const Home = () => {
                 </div>
             </div>
 
-            <Link to={'/chat'}>
-                <button className="btn btn-primary">go to chat</button>
-            </Link>
         </div>
     )
 }

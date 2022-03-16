@@ -2,6 +2,10 @@ import React, { useContext, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom';
 import { UserContext } from '../../UserContext'
 import io from 'socket.io-client';
+
+import Messages from './messages/Messages';
+import Input from './input/Input'
+import './Chat.css'
 let socket;
 const Chat = () => {
     const ENDPT = 'localhost:5000';
@@ -12,13 +16,24 @@ const Chat = () => {
     const [messages, setMessages] = useState([]);
     useEffect(() => {
         socket = io(ENDPT);
-        socket.emit('join', { name: user.name, room_id, user_id: user.id })
+        socket.emit('join', { name: user.name, room_id, user_id: user._id })
     }, [])
     useEffect(() => {
         socket.on('message', message => {
             setMessages([...messages, message])
+            console.log(messages);
         })
     }, [messages])
+
+    useEffect(() => {
+        socket.emit('get-messages-history', room_id)
+        socket.on('output-messages', messages => {
+            setMessages(messages);
+            console.log(messages);
+        })
+    }, [])
+
+
     const sendMessage = event => {
         event.preventDefault();
         if (message) {
@@ -27,18 +42,14 @@ const Chat = () => {
         }
     }
     return (
-        <div>
-            <div>{room_id} {room_name}</div>
-            <h1>Chat {JSON.stringify(user)}</h1>
-            <pre>{JSON.stringify(messages, null, '\t')}</pre>
-            <form action="" onSubmit={sendMessage}>
-                <input type="text"
-                    value={message}
-                    onChange={event => setMessage(event.target.value)}
-                    onKeyPress={event => event.key === 'Enter' ? sendMessage(event) : null}
-                />
-                <button>Send Message</button>
-            </form>
+        <div className="outerContainer">
+            <div className="container">
+                <Messages messages={messages} user_id={user._id} />
+                <Input
+                    message={message}
+                    setMessage={setMessage}
+                    sendMessage={sendMessage} />
+            </div>
         </div>
     )
 }
